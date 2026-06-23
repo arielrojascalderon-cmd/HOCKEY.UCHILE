@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hockey UCH</title>
+<style>
+/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-size: 14px; background: #F5F6F8; color: #1A1A2E; }
+
+/* ===== TOKENS UCH ===== */
+:root {
+  --blue:       #1042A0;
+  --blue-dark:  #0A2569;
+  --blue-mid:   #1A56C4;
+  --blue-light: #E8EEF8;
+  --red:        #C0152A;
+  --red-light:  #FAE8EB;
+  --white:      #FFFFFF;
+  --gray-50:    #F5F6F8;
+  --gray-100:   #ECEEF2;
+  --gray-200:   #D8DCE8;
+  --gray-400:   #8892A8;
+  --gray-700:   #3A4060;
+  --text:       #1A1A2E;
+  --text-sub:   #5A6080;
+  --text-dim:   #8892A8;
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  14px;
+  --shadow-sm:  0 1px 4px rgba(16,66,160,0.07);
+  --shadow-md:  0 4px 16px rgba(16,66,160,0.10);
+}
+
+/* ===== LAYOUT ===== */
+.app { display: flex; height: 100vh; overflow: hidden; }
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  width: 220px; flex-shrink: 0;
+  background: var(--blue-dark);
+  display: flex; flex-direction: column;
+  transition: width 0.2s;
+}
+.sb-header { padding: 1.25rem 1rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.sb-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.sb-logo-icon {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: var(--red);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.sb-logo-icon svg { width: 20px; height: 20px; fill: white; }
+.sb-logo-text { line-height: 1.2; }
+.sb-logo-title { font-size: 14px; font-weight: 600; color: white; letter-spacing: 0.02em; }
+.sb-logo-sub { font-size: 11px; color: rgba(255,255,255,0.45); }
+.user-pill {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,0.07);
+  border-radius: var(--radius-md); padding: 7px 10px;
+}
+.user-ava {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--red); color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 600; flex-shrink: 0;
+}
+.user-info { overflow: hidden; }
+.user-name { font-size: 12px; color: rgba(255,255,255,0.9); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+.user-role { font-size: 10px; color: rgba(255,255,255,0.4); }
+
+.nav-section { font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.3); padding: 12px 1rem 4px; letter-spacing: 0.08em; text-transform: uppercase; }
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 1rem; font-size: 13px; color: rgba(255,255,255,0.55);
+  cursor: pointer; border-left: 2px solid transparent;
+  transition: background 0.15s, color 0.15s;
+}
+.nav-item:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.85); }
+.nav-item.active { background: rgba(255,255,255,0.1); color: white; border-left-color: var(--red); }
+.nav-item.locked { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+.nav-item svg { width: 16px; height: 16px; flex-shrink: 0; opacity: 0.8; }
+.nav-item.active svg { opacity: 1; }
+.sb-footer { margin-top: auto; padding: 1rem; border-top: 1px solid rgba(255,255,255,0.08); }
+.btn-logout {
+  width: 100%; text-align: left; padding: 7px 8px;
+  font-size: 12px; color: rgba(255,255,255,0.4);
+  background: transparent; border: none; cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  border-radius: var(--radius-sm);
+}
+.btn-logout:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.06); }
+
+/* ===== MAIN ===== */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--gray-50); }
+.topbar {
+  padding: 12px 1.5rem; border-bottom: 1px solid var(--gray-200);
+  display: flex; align-items: center; justify-content: space-between;
+  background: white; flex-shrink: 0;
+}
+.topbar-title { font-size: 16px; font-weight: 600; color: var(--text); }
+.topbar-sub { font-size: 12px; color: var(--text-sub); margin-top: 1px; }
+.role-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 10px; border-radius: 99px; font-size: 11px; font-weight: 600;
+}
+.badge-coach { background: var(--blue-light); color: var(--blue-dark); }
+.badge-player { background: var(--red-light); color: var(--red); }
+
+.content { flex: 1; overflow-y: auto; padding: 1.5rem; }
+
+/* ===== PANTALLA LOGIN ===== */
+.login-wrap {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh; background: var(--blue-dark);
+  position: fixed; inset: 0; z-index: 100;
+}
+.login-card {
+  background: white; border-radius: var(--radius-lg);
+  padding: 2rem; width: 340px;
+  box-shadow: var(--shadow-md);
+}
+.login-logo { text-align: center; margin-bottom: 1.75rem; }
+.login-logo-badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--blue-dark); color: white;
+  padding: 8px 18px; border-radius: 99px;
+  font-size: 14px; font-weight: 600; letter-spacing: 0.02em;
+  margin-bottom: 1rem;
+}
+.login-logo-badge svg { width: 18px; height: 18px; fill: var(--red); }
+.login-title { font-size: 22px; font-weight: 700; color: var(--text); }
+.login-sub { font-size: 13px; color: var(--text-sub); margin-top: 4px; }
+.form-group { margin-bottom: 12px; }
+.form-label { font-size: 12px; font-weight: 500; color: var(--text-sub); display: block; margin-bottom: 5px; }
+.form-input {
+  width: 100%; font-size: 13px; padding: 9px 12px;
+  border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm);
+  background: white; color: var(--text); outline: none;
+  transition: border-color 0.15s;
+}
+.form-input:focus { border-color: var(--blue); }
+.role-picker { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 1.25rem; }
+.role-opt {
+  border: 1.5px solid var(--gray-200); border-radius: var(--radius-md);
+  padding: 12px 8px; text-align: center; cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.role-opt:hover { border-color: var(--blue); }
+.role-opt.sel { border-color: var(--blue); background: var(--blue-light); }
+.role-opt svg { width: 24px; height: 24px; display: block; margin: 0 auto 6px; color: var(--gray-400); }
+.role-opt.sel svg { color: var(--blue); }
+.role-opt-name { font-size: 13px; font-weight: 600; color: var(--text); }
+.role-opt-sub { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
+.btn-login-submit {
+  width: 100%; padding: 11px; font-size: 14px; font-weight: 600;
+  border: none; border-radius: var(--radius-sm);
+  background: var(--blue); color: white; cursor: pointer;
+  transition: background 0.15s;
+}
+.btn-login-submit:hover { background: var(--blue-mid); }
+.login-footer { text-align: center; font-size: 11px; color: var(--text-dim); margin-top: 14px; }
+
+/* ===== COMPONENTES GENERALES ===== */
+.stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 1.5rem; }
+.stat-card {
+  background: white; border-radius: var(--radius-md);
+  padding: 1rem 1.25rem; border: 1px solid var(--gray-100);
+  box-shadow: var(--shadow-sm);
+}
+.stat-label { font-size: 11px; font-weight: 500; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+.stat-value { font-size: 28px; font-weight: 700; color: var(--blue); line-height: 1; }
+.stat-value.red { color: var(--red); }
+.stat-value.gray { color: var(--gray-700); }
+
+.card {
+  background: white; border-radius: var(--radius-md);
+  border: 1px solid var(--gray-100); padding: 1.25rem;
+  margin-bottom: 1rem; box-shadow: var(--shadow-sm);
+}
+.card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+.card-title { font-size: 14px; font-weight: 600; color: var(--text); }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; font-size: 12px; font-weight: 500;
+  border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm);
+  background: white; color: var(--text); cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.btn:hover { border-color: var(--gray-400); }
+.btn svg { width: 14px; height: 14px; }
+.btn-blue { background: var(--blue); color: white; border-color: var(--blue); }
+.btn-blue:hover { background: var(--blue-mid); border-color: var(--blue-mid); }
+.btn-red { background: var(--red); color: white; border-color: var(--red); }
+
+.badge-small {
+  display: inline-flex; padding: 2px 8px;
+  border-radius: 99px; font-size: 11px; font-weight: 600;
+}
+.badge-win { background: #E1F5EE; color: #085041; }
+.badge-draw { background: var(--gray-100); color: var(--gray-700); }
+.badge-loss { background: var(--red-light); color: var(--red); }
+.badge-blue { background: var(--blue-light); color: var(--blue-dark); }
+
+.match-row {
+  display: grid; grid-template-columns: 1fr auto 1fr;
+  align-items: center; gap: 12px;
+  padding: 12px; border: 1px solid var(--gray-100);
+  border-radius: var(--radius-md); margin-bottom: 8px;
+  background: white;
+}
+.match-team-name { font-size: 13px; font-weight: 600; color: var(--text); }
+.match-team-cat { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+.match-score-center { text-align: center; }
+.match-score-num { font-size: 22px; font-weight: 700; color: var(--blue); letter-spacing: 3px; }
+.match-score-date { font-size: 11px; color: var(--text-dim); margin-top: 3px; }
+
+.table { width: 100%; border-collapse: collapse; }
+.table th { font-size: 11px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--gray-100); }
+.table td { font-size: 13px; color: var(--text); padding: 10px 10px; border-bottom: 1px solid var(--gray-100); }
+.table tr:last-child td { border-bottom: none; }
+.table tbody tr:hover td { background: var(--gray-50); }
+
+.avatar { border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 600; flex-shrink: 0; }
+.avatar-blue { background: var(--blue); color: white; }
+.avatar-red { background: var(--red); color: white; }
+.avatar-dark { background: var(--blue-dark); color: white; }
+
+/* ===== FORMULARIOS ===== */
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+select.form-input { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238892A8' d='M1 1l5 5 5-5'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; }
+
+/* ===== SCORE INPUT ===== */
+.score-input-row { display: grid; grid-template-columns: 1fr 30px 1fr; gap: 10px; align-items: center; margin-bottom: 12px; }
+.score-input { font-size: 28px; font-weight: 700; text-align: center; color: var(--blue); }
+
+/* ===== PIZARRA ===== */
+.pizarra-layout { display: flex; gap: 1rem; height: calc(100vh - 120px); }
+.pizarra-controls { width: 180px; flex-shrink: 0; }
+.pizarra-main { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; background: white; border-radius: var(--radius-md); border: 1px solid var(--gray-100); padding: 1rem; }
+.pizarra-toolbar { display: flex; gap: 8px; margin-bottom: 12px; }
+.draw-btn {
+  padding: 6px 12px; font-size: 12px; font-weight: 500;
+  border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm);
+  background: white; color: var(--text-sub); cursor: pointer;
+  display: flex; align-items: center; gap: 5px;
+}
+.draw-btn:hover { border-color: var(--blue); color: var(--blue); }
+.draw-btn.active-d { border-color: var(--blue); background: var(--blue-light); color: var(--blue-dark); font-weight: 600; }
+.draw-btn svg { width: 14px; height: 14px; }
+.field-canvas-wrap { position: relative; }
+.player-token {
+  position: absolute; width: 36px; height: 36px; border-radius: 50%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  cursor: grab; user-select: none;
+  font-size: 10px; font-weight: 600; z-index: 10;
+  border: 2px solid rgba(255,255,255,0.6);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.18);
+}
+.player-token:active { cursor: grabbing; z-index: 20; transform: scale(1.12); }
+.player-token.uch { background: var(--blue); color: white; }
+.player-token.rival { background: var(--red); color: white; }
+.player-token.gk { border-color: #FAC775; border-width: 2.5px; }
+.player-token .pnum { font-size: 13px; font-weight: 700; line-height: 1; }
+.player-token .pname { font-size: 7px; line-height: 1; opacity: 0.85; margin-top: 1px; white-space: nowrap; overflow: hidden; max-width: 32px; text-overflow: ellipsis; }
+.pfield-tooltip {
+  position: absolute; background: var(--blue-dark); color: white;
+  border-radius: var(--radius-sm); padding: 5px 10px;
+  font-size: 12px; pointer-events: none; z-index: 30;
+  white-space: nowrap; display: none;
+  box-shadow: var(--shadow-md);
+}
+.legend-row { display: flex; align-items: center; gap: 16px; margin-top: 10px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+.legend-text { font-size: 11px; color: var(--text-sub); display: flex; align-items: center; }
+
+.fmtn-btn {
+  width: 100%; text-align: left; padding: 8px 10px; font-size: 12px; font-weight: 500;
+  border: 1.5px solid var(--gray-200); border-radius: var(--radius-sm);
+  background: white; color: var(--text); cursor: pointer; margin-bottom: 5px;
+  display: flex; align-items: center; gap: 6px;
+}
+.fmtn-btn:hover { border-color: var(--blue); }
+.fmtn-btn.active-f { border-color: var(--blue); background: var(--blue-light); color: var(--blue-dark); }
+.ctrl-section { font-size: 11px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin: 12px 0 6px; }
+
+/* ===== VOTACIÓN ===== */
+.vote-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.vote-card {
+  border: 1.5px solid var(--gray-200); border-radius: var(--radius-md);
+  padding: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px;
+  transition: border-color 0.15s, background 0.15s;
+}
+.vote-card:hover { border-color: var(--blue); background: var(--blue-light); }
+.vote-card.voted { border-color: var(--blue); background: var(--blue-light); }
+.vote-bar-wrap { height: 3px; background: var(--gray-100); border-radius: 99px; margin-top: 5px; }
+.vote-bar { height: 3px; border-radius: 99px; background: var(--blue); }
+.vote-num { font-size: 17px; font-weight: 700; color: var(--blue); margin-left: auto; flex-shrink: 0; }
+
+.winner-card {
+  background: linear-gradient(135deg, var(--blue-dark), var(--blue));
+  border-radius: var(--radius-md); padding: 1.25rem; text-align: center;
+  color: white; margin-bottom: 1rem;
+}
+.winner-star { font-size: 28px; margin-bottom: 6px; }
+.winner-name { font-size: 20px; font-weight: 700; }
+.winner-sub { font-size: 12px; opacity: 0.7; margin-top: 4px; }
+
+.result-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.result-bar-wrap { flex: 2; height: 6px; background: var(--gray-100); border-radius: 99px; }
+.result-bar { height: 6px; border-radius: 99px; background: var(--blue); transition: width 0.4s; }
+
+/* ===== PERFIL JUGADORA ===== */
+.ficha-header {
+  background: linear-gradient(135deg, var(--blue-dark), var(--blue));
+  border-radius: var(--radius-md); padding: 1.5rem;
+  display: flex; align-items: center; gap: 1.25rem;
+  color: white; margin-bottom: 1rem;
+}
+.ficha-ava {
+  width: 64px; height: 64px; border-radius: 50%;
+  background: var(--red); color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; font-weight: 700; flex-shrink: 0;
+  border: 3px solid rgba(255,255,255,0.4);
+}
+.ficha-name { font-size: 20px; font-weight: 700; }
+.ficha-pos { font-size: 13px; opacity: 0.75; margin-top: 3px; }
+.ficha-stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; margin-bottom: 1rem; }
+.ficha-stat {
+  background: white; border-radius: var(--radius-md);
+  border: 1px solid var(--gray-100); padding: 1rem; text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+.ficha-stat-val { font-size: 28px; font-weight: 700; color: var(--blue); }
+.ficha-stat-lbl { font-size: 11px; color: var(--text-dim); margin-top: 4px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(10,37,105,0.45);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200; display: none;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: white; border-radius: var(--radius-lg);
+  padding: 1.5rem; width: 460px; max-height: 90vh;
+  overflow-y: auto; box-shadow: var(--shadow-md);
+}
+.modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.25rem; }
+.modal-title { font-size: 16px; font-weight: 700; color: var(--text); }
+.modal-close { background: none; border: none; cursor: pointer; color: var(--text-dim); padding: 4px; border-radius: 50%; }
+.modal-close:hover { background: var(--gray-100); color: var(--text); }
+.modal-close svg { width: 18px; height: 18px; }
+.modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 1.25rem; }
+
+.btn-votar {
+  width: 100%; padding: 11px; font-size: 14px; font-weight: 600;
+  border: none; border-radius: var(--radius-sm);
+  background: var(--blue); color: white; cursor: pointer;
+  margin-top: 8px; transition: background 0.15s;
+}
+.btn-votar:hover { background: var(--blue-mid); }
+.btn-votar:disabled { background: var(--gray-200); color: var(--text-dim); cursor: default; }
+
+.access-denied {
+  text-align: center; padding: 4rem 2rem;
+}
+.access-denied svg { width: 48px; height: 48px; color: var(--gray-200); display: block; margin: 0 auto 16px; }
+.voted-msg { text-align: center; font-size: 13px; color: var(--blue); font-weight: 500; margin-top: 8px; }
+
+/* ===== TABS ===== */
+.tabs-bar { display: flex; border-bottom: 2px solid var(--gray-100); margin-bottom: 1.25rem; }
+.tab { padding: 8px 16px; font-size: 13px; font-weight: 500; color: var(--text-sub); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+.tab:hover { color: var(--blue); }
+.tab.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+.empty-state { text-align: center; padding: 3rem 1rem; color: var(--text-dim); font-size: 13px; }
+
+/* ===== TOAST ===== */
+.toast {
+  position: fixed; bottom: 2rem; right: 2rem;
+  background: var(--blue-dark); color: white;
+  padding: 12px 20px; border-radius: var(--radius-md);
+  font-size: 13px; font-weight: 500;
+  box-shadow: var(--shadow-md); z-index: 999;
+  transform: translateY(80px); opacity: 0;
+  transition: transform 0.25s, opacity 0.25s;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-wrap" id="loginWrap">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-badge">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+        Hockey UCH
+      </div>
+      <div class="login-title">Bienvenida/o</div>
+      <div class="login-sub">Universidad de Chile · Deporte Universitario</div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nombre</label>
+      <input class="form-input" type="text" id="inp-name" placeholder="Ej: Ana Contreras" />
+    </div>
+    <div class="form-group" style="margin-bottom:1rem;">
+      <label class="form-label">Contraseña</label>
+      <input class="form-input" type="password" id="inp-pass" placeholder="••••••••" />
+    </div>
+    <div class="form-label" style="margin-bottom:8px;">Ingresar como</div>
+    <div class="role-picker" style="margin-bottom:1.25rem;">
+      <div class="role-opt sel" id="opt-coach" onclick="selectRole('coach')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        <div class="role-opt-name">Entrenador/a</div>
+        <div class="role-opt-sub">Acceso completo</div>
+      </div>
+      <div class="role-opt" id="opt-player" onclick="selectRole('player')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0112 0v2"/></svg>
+        <div class="role-opt-name">Jugadora</div>
+        <div class="role-opt-sub">Mi ficha y votación</div>
+      </div>
+    </div>
+    <button class="btn-login-submit" onclick="doLogin()">Ingresar al sistema</button>
+    <div class="login-footer">Temporada 2026 · Hockey UCH</div>
+  </div>
+</div>
+
+<!-- APP SHELL -->
+<div class="app" id="appShell" style="display:none;">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sb-header">
+      <div class="sb-logo">
+        <div class="sb-logo-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+        </div>
+        <div class="sb-logo-text">
+          <div class="sb-logo-title">Hockey UCH</div>
+          <div class="sb-logo-sub">Temporada 2026</div>
+        </div>
+      </div>
+      <div class="user-pill">
+        <div class="user-ava" id="sbAvatar">?</div>
+        <div class="user-info">
+          <div class="user-name" id="sbName">—</div>
+          <div class="user-role" id="sbRole">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-section">Principal</div>
+    <div class="nav-item active" id="nav-home" onclick="goPage('home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/></svg>
+      Resumen
+    </div>
+    <div class="nav-item" id="nav-partidos" onclick="goPage('partidos')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Partidos
+    </div>
+
+    <div class="nav-section">Mi espacio</div>
+    <div class="nav-item" id="nav-ficha" onclick="goPage('ficha')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0112 0v2"/></svg>
+      Mi ficha
+    </div>
+    <div class="nav-item" id="nav-votacion" onclick="goPage('votacion')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      Votación
+    </div>
+
+    <div class="nav-section" id="navSecGestion">Gestión</div>
+    <div class="nav-item" id="nav-equipos" onclick="goPage('equipos')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+      Equipos
+    </div>
+    <div class="nav-item" id="nav-jugadoras" onclick="goPage('jugadoras')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0112 0v2"/><line x1="19" y1="8" x2="23" y2="8"/><line x1="21" y1="6" x2="21" y2="10"/></svg>
+      Jugadoras
+    </div>
+    <div class="nav-item" id="nav-pizarra" onclick="goPage('pizarra')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      Pizarra táctica
+    </div>
+
+    <div class="sb-footer">
+      <button class="btn-logout" onclick="doLogout()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Cerrar sesión
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="topbarTitle">Resumen</div>
+        <div class="topbar-sub" id="topbarSub">Panel principal</div>
+      </div>
+      <span class="role-badge" id="roleBadge">—</span>
+    </div>
+    <div class="content" id="pageContent"></div>
+  </div>
+</div>
+
+<!-- MODAL NUEVO PARTIDO -->
+<div class="modal-overlay" id="modalPartido">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Registrar partido</div>
+      <button class="modal-close" onclick="closeModal('modalPartido')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Equipo UCH</label>
+        <select class="form-input" id="m-equipo">
+          <option>Damas A</option><option>Damas B</option><option>Sub-18</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Rival</label>
+        <input class="form-input" id="m-rival" placeholder="Ej: PUC" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Fecha</label>
+        <input class="form-input" type="date" id="m-fecha" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">Sede</label>
+        <input class="form-input" id="m-sede" placeholder="Cancha Principal" />
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:12px;">
+      <label class="form-label">Condición</label>
+      <select class="form-input" id="m-cond"><option>Local</option><option>Visita</option></select>
+    </div>
+    <div class="score-input-row">
+      <div>
+        <div class="form-label" style="text-align:center;">UCH</div>
+        <input class="form-input score-input" type="number" min="0" value="0" id="m-goles-uch" />
+      </div>
+      <div style="text-align:center;font-size:18px;font-weight:700;color:var(--text-dim);padding-top:20px;">—</div>
+      <div>
+        <div class="form-label" style="text-align:center;">Rival</div>
+        <input class="form-input score-input" type="number" min="0" value="0" id="m-goles-rival" />
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modalPartido')">Cancelar</button>
+      <button class="btn btn-blue" onclick="guardarPartido()">Guardar partido</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL NUEVA JUGADORA -->
+<div class="modal-overlay" id="modalJugadora">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Agregar jugadora</div>
+      <button class="modal-close" onclick="closeModal('modalJugadora')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Nombre</label>
+        <input class="form-input" id="j-nombre" placeholder="Nombre Apellido" />
+      </div>
+      <div class="form-group">
+        <label class="form-label">N° camiseta</label>
+        <input class="form-input" type="number" id="j-num" min="1" max="99" placeholder="7" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Posición</label>
+        <select class="form-input" id="j-pos">
+          <option>Arquera</option><option>Defensora</option>
+          <option>Mediocampista</option><option>Delantera</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Equipo</label>
+        <select class="form-input" id="j-equipo">
+          <option>Damas A</option><option>Damas B</option><option>Sub-18</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal('modalJugadora')">Cancelar</button>
+      <button class="btn btn-blue" onclick="guardarJugadora()">Agregar jugadora</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== ESTADO GLOBAL =====
+let state = {
+  role: 'coach',
+  user: '',
+  currentPage: 'home',
+  selectedVote: null,
+  hasVoted: false,
+  votes: { u1:3, u2:2, u3:1, u4:0, u5:6, u6:9, u7:4 },
+  currentFormation: '1-3-1-1',
+  drawMode: 'drag',
+  arrows: [],
+  drawStart: null,
+  isDragging: false,
+  positions: {},
+  equipos: [
+    { id:'e1', init:'DA', name:'Damas A', cat:'1ª categoría', color:'blue' },
+    { id:'e2', init:'DB', name:'Damas B', cat:'2ª categoría', color:'dark' },
+    { id:'e3', init:'S18', name:'Sub-18', cat:'Formativa', color:'red' },
+  ],
+  jugadoras: [
+    { id:'u1', num:'1', name:'C. Soto', pos:'Arquera', equipo:'Damas A', goles:0, asist:2, tarjetas:0, gk:true },
+    { id:'u2', num:'2', name:'P. López', pos:'Defensora', equipo:'Damas A', goles:0, asist:1, tarjetas:1, gk:false },
+    { id:'u3', num:'3', name:'R. Muñoz', pos:'Defensora', equipo:'Damas A', goles:1, asist:0, tarjetas:0, gk:false },
+    { id:'u4', num:'4', name:'S. Riquelme', pos:'Defensora', equipo:'Damas A', goles:0, asist:3, tarjetas:0, gk:false },
+    { id:'u5', num:'5', name:'M. Vega', pos:'Mediocampista', equipo:'Damas A', goles:3, asist:4, tarjetas:0, gk:false },
+    { id:'u6', num:'6', name:'A. Contreras', pos:'Delantera', equipo:'Damas A', goles:8, asist:5, tarjetas:1, gk:false },
+    { id:'u7', num:'7', name:'N. Pinto', pos:'Delantera', equipo:'Damas A', goles:5, asist:2, tarjetas:0, gk:false },
+  ],
+  rivalPlayers: [
+    { id:'r1', num:'1', name:'GK', pos:'Arquera', gk:true },
+    { id:'r2', num:'2', name:'DD', pos:'Defensora', gk:false },
+    { id:'r3', num:'3', name:'DC', pos:'Defensora', gk:false },
+    { id:'r4', num:'4', name:'DC', pos:'Defensora', gk:false },
+    { id:'r5', num:'5', name:'MC', pos:'Mediocampista', gk:false },
+    { id:'r6', num:'6', name:'EX', pos:'Delantera', gk:false },
+    { id:'r7', num:'7', name:'DC', pos:'Delantera', gk:false },
+  ],
+  partidos: [
+    { id:'p1', equipo:'Damas A', rival:'PUC', gUCH:3, gRival:1, fecha:'14 Jun 2026', sede:'Cancha Principal', cond:'Local' },
+    { id:'p2', equipo:'Damas B', rival:'U. de Santiago', gUCH:2, gRival:2, fecha:'10 Jun 2026', sede:'Cancha Sur', cond:'Local' },
+    { id:'p3', equipo:'Sub-18', rival:'U. Mayor', gUCH:1, gRival:4, fecha:'7 Jun 2026', sede:'Cancha U. Mayor', cond:'Visita' },
+    { id:'p4', equipo:'Damas A', rival:'U. Andrés Bello', gUCH:2, gRival:0, fecha:'1 Jun 2026', sede:'Cancha U. Andrés Bello', cond:'Visita' },
+  ]
+};
+
+const FORMATIONS = {
+  '1-3-1-1': {
+    uch:    [[230,575],[100,460],[230,455],[360,460],[230,330],[230,190]],
+    rival:  [[230,45],[100,160],[230,165],[360,160],[230,290],[230,430]]
+  },
+  '1-2-2-1': {
+    uch:    [[230,575],[140,470],[320,470],[120,340],[340,340],[230,190]],
+    rival:  [[230,45],[140,150],[320,150],[120,280],[340,280],[230,430]]
+  },
+  '1-3-2': {
+    uch:    [[230,575],[110,460],[230,450],[350,460],[160,300],[300,300]],
+    rival:  [[230,45],[110,160],[230,170],[350,160],[160,320],[300,320]]
+  }
+};
+
+// ===== LOGIN =====
+let selectedRole = 'coach';
+function selectRole(r) {
+  selectedRole = r;
+  document.getElementById('opt-coach').classList.toggle('sel', r === 'coach');
+  document.getElementById('opt-player').classList.toggle('sel', r === 'player');
+}
+
+function doLogin() {
+  const name = document.getElementById('inp-name').value.trim() || (selectedRole === 'coach' ? 'Entrenador/a UCH' : 'Jugadora UCH');
+  state.role = selectedRole;
+  state.user = name;
+  const ini = name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+  document.getElementById('sbAvatar').textContent = ini;
+  document.getElementById('sbName').textContent = name;
+  document.getElementById('sbRole').textContent = state.role === 'coach' ? 'Entrenador/a' : 'Jugadora';
+  document.getElementById('roleBadge').textContent = state.role === 'coach' ? 'Entrenador/a' : 'Jugadora';
+  document.getElementById('roleBadge').className = 'role-badge ' + (state.role === 'coach' ? 'badge-coach' : 'badge-player');
+  const gestionItems = ['nav-equipos','nav-jugadoras','nav-pizarra'];
+  if (state.role === 'player') {
+    gestionItems.forEach(id => document.getElementById(id).classList.add('locked'));
+    document.getElementById('navSecGestion').style.display = 'none';
+  } else {
+    gestionItems.forEach(id => document.getElementById(id).classList.remove('locked'));
+    document.getElementById('navSecGestion').style.display = '';
+  }
+  document.getElementById('loginWrap').style.display = 'none';
+  document.getElementById('appShell').style.display = 'flex';
+  goPage('home');
+}
+
+function doLogout() {
+  document.getElementById('appShell').style.display = 'none';
+  document.getElementById('loginWrap').style.display = 'flex';
+  document.getElementById('inp-name').value = '';
+  document.getElementById('inp-pass').value = '';
+}
+
+// ===== NAVEGACIÓN =====
+const PAGE_META = {
+  home:      ['Resumen', 'Panel principal'],
+  partidos:  ['Partidos', 'Historial y próximos encuentros'],
+  ficha:     ['Mi ficha', 'Estadísticas personales'],
+  votacion:  ['Votación', 'Jugadora del partido · UCH Damas A vs PUC'],
+  equipos:   ['Equipos', 'Gestión de equipos'],
+  jugadoras: ['Jugadoras', 'Registro de jugadoras'],
+  pizarra:   ['Pizarra táctica', 'Hockey seven a side — 7v7']
+};
+
+function goPage(page) {
+  if (state.role === 'player' && ['equipos','jugadoras','pizarra'].includes(page)) {
+    renderAccessDenied(); return;
+  }
+  state.currentPage = page;
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const nav = document.getElementById('nav-' + page);
+  if (nav) nav.classList.add('active');
+  const meta = PAGE_META[page] || ['—','—'];
+  document.getElementById('topbarTitle').textContent = meta[0];
+  document.getElementById('topbarSub').textContent = meta[1];
+  const renders = { home: renderHome, partidos: renderPartidos, ficha: renderFicha, votacion: renderVotacion, equipos: renderEquipos, jugadoras: renderJugadoras, pizarra: renderPizarra };
+  if (renders[page]) renders[page]();
+}
+
+// ===== PÁGINAS =====
+function renderHome() {
+  const total = state.partidos.length;
+  const wins = state.partidos.filter(p => p.gUCH > p.gRival).length;
+  const draws = state.partidos.filter(p => p.gUCH === p.gRival).length;
+  const losses = state.partidos.filter(p => p.gUCH < p.gRival).length;
+  const isCoach = state.role === 'coach';
+  document.getElementById('pageContent').innerHTML = `
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">Partidos</div><div class="stat-value">${total}</div></div>
+      <div class="stat-card"><div class="stat-label">Victorias</div><div class="stat-value">${wins}</div></div>
+      <div class="stat-card"><div class="stat-label">Empates</div><div class="stat-value gray">${draws}</div></div>
+      <div class="stat-card"><div class="stat-label">Derrotas</div><div class="stat-value red">${losses}</div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Último partido</span>
+        <span class="badge-small badge-win">Victoria</span>
+      </div>
+      <div class="match-row" style="cursor:default;">
+        <div><div class="match-team-name">UCH Damas A</div><div class="match-team-cat">Local</div></div>
+        <div class="match-score-center">
+          <div class="match-score-num">3 – 1</div>
+          <div class="match-score-date">14 Jun 2026 · Cancha Principal</div>
+        </div>
+        <div style="text-align:right;"><div class="match-team-name">PUC</div><div class="match-team-cat">Visita</div></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        ${isCoach ? `<button class="btn btn-blue" onclick="goPage('pizarra')">Pizarra táctica</button>
+        <button class="btn" onclick="goPage('votacion')">Ver votación</button>` :
+        `<button class="btn btn-blue" onclick="goPage('votacion')">⭐ Votar jugadora del partido</button>
+        <button class="btn" onclick="goPage('ficha')">Mi ficha</button>`}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Próximo partido</span>
+        <span class="badge-small badge-blue">28 Jun 2026</span>
+      </div>
+      <div class="match-row" style="cursor:default;">
+        <div><div class="match-team-name">UCH Damas A</div><div class="match-team-cat">Visita</div></div>
+        <div class="match-score-center" style="font-size:14px;color:var(--text-dim);">vs</div>
+        <div style="text-align:right;"><div class="match-team-name">U. de Santiago</div><div class="match-team-cat">Local · 15:00 hrs</div></div>
+      </div>
+    </div>
+    ${isCoach ? `<div class="card">
+      <div class="card-header"><span class="card-title">Resumen del plantel</span></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+        ${state.equipos.map(e => `<div style="border:1px solid var(--gray-100);border-radius:var(--radius-md);padding:10px;display:flex;align-items:center;gap:10px;">
+          <div class="avatar avatar-${e.color}" style="width:36px;height:36px;font-size:12px;">${e.init}</div>
+          <div><div style="font-size:13px;font-weight:600;">${e.name}</div><div style="font-size:11px;color:var(--text-dim);">${e.cat}</div></div>
+        </div>`).join('')}
+      </div>
+    </div>` : ''}`;
+}
+
+function renderPartidos() {
+  const isCoach = state.role === 'coach';
+  function getBadge(p) {
+    if (p.gUCH > p.gRival) return '<span class="badge-small badge-win">Victoria</span>';
+    if (p.gUCH === p.gRival) return '<span class="badge-small badge-draw">Empate</span>';
+    return '<span class="badge-small badge-loss">Derrota</span>';
+  }
+  document.getElementById('pageContent').innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Historial de partidos</span>
+        ${isCoach ? `<button class="btn btn-blue" onclick="openModal('modalPartido')">+ Registrar partido</button>` : ''}
+      </div>
+      ${state.partidos.map(p => `
+        <div class="match-row" style="cursor:default;margin-bottom:8px;">
+          <div><div class="match-team-name">UCH ${p.equipo}</div><div class="match-team-cat">${p.cond}</div></div>
+          <div class="match-score-center">
+            <div class="match-score-num">${p.gUCH} – ${p.gRival}</div>
+            <div style="margin:3px 0;">${getBadge(p)}</div>
+            <div class="match-score-date">${p.fecha} · ${p.sede}</div>
+          </div>
+          <div style="text-align:right;"><div class="match-team-name">${p.rival}</div><div class="match-team-cat">Rival</div></div>
+        </div>`).join('')}
+      ${state.partidos.length === 0 ? '<div class="empty-state">No hay partidos registrados aún.</div>' : ''}
+    </div>`;
+}
+
+function renderFicha() {
+  const p = state.jugadoras.find(j => j.name.toLowerCase().includes(state.user.split(' ')[0].toLowerCase())) || state.jugadoras[5];
+  const ini = p.name.split(' ').map(w=>w[0]).join('').toUpperCase();
+  document.getElementById('pageContent').innerHTML = `
+    <div class="ficha-header">
+      <div class="ficha-ava">${ini}</div>
+      <div>
+        <div class="ficha-name">${state.user || p.name}</div>
+        <div class="ficha-pos">${p.pos} · #${p.num} · UCH ${p.equipo}</div>
+      </div>
+    </div>
+    <div class="ficha-stats-row">
+      <div class="ficha-stat"><div class="ficha-stat-val">${p.goles}</div><div class="ficha-stat-lbl">Goles</div></div>
+      <div class="ficha-stat"><div class="ficha-stat-val">${p.asist}</div><div class="ficha-stat-lbl">Asistencias</div></div>
+      <div class="ficha-stat"><div class="ficha-stat-val" style="color:var(--red);">${p.tarjetas}</div><div class="ficha-stat-lbl">Tarjetas</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:1rem;">Partidos disputados</div>
+      <table class="table">
+        <thead><tr><th>Rival</th><th>Resultado</th><th>Goles</th><th>Asist.</th></tr></thead>
+        <tbody>
+          <tr><td>PUC</td><td><span class="badge-small badge-win">Victoria 3–1</span></td><td style="font-weight:600;color:var(--blue);">2</td><td>1</td></tr>
+          <tr><td>U. Santiago</td><td><span class="badge-small badge-draw">Empate 2–2</span></td><td style="font-weight:600;color:var(--blue);">0</td><td>1</td></tr>
+          <tr><td>U. Andrés Bello</td><td><span class="badge-small badge-win">Victoria 2–0</span></td><td style="font-weight:600;color:var(--blue);">1</td><td>0</td></tr>
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function renderVotacion() {
+  const isCoach = state.role === 'coach';
+  const total = Object.values(state.votes).reduce((a,b) => a+b, 0);
+  const sorted = [...state.jugadoras].sort((a,b) => (state.votes[b.id]||0) - (state.votes[a.id]||0));
+  const winner = sorted[0];
+  let html = `
+    <div class="winner-card">
+      <div class="winner-star">⭐</div>
+      <div class="winner-name">#${winner.num} ${winner.name}</div>
+      <div class="winner-sub">${winner.pos} · ${state.votes[winner.id]} votos · UCH Damas A vs PUC</div>
+    </div>`;
+
+  if (isCoach) {
+    html += `<div class="card"><div class="card-title" style="margin-bottom:1rem;">Resultados completos</div>`;
+    sorted.forEach(p => {
+      const v = state.votes[p.id]||0;
+      const pct = total > 0 ? Math.round(v/total*100) : 0;
+      html += `<div class="result-row">
+        <div class="avatar avatar-blue" style="width:30px;height:30px;font-size:11px;">${p.num}</div>
+        <div style="flex:1;font-size:13px;font-weight:500;">${p.name}</div>
+        <div style="font-size:11px;color:var(--text-dim);width:30px;">${p.pos.slice(0,3)}.</div>
+        <div class="result-bar-wrap"><div class="result-bar" style="width:${pct}%"></div></div>
+        <div style="font-size:13px;font-weight:700;color:var(--blue);min-width:32px;text-align:right;">${v}</div>
+      </div>`;
+    });
+    html += `<div style="text-align:right;font-size:12px;color:var(--text-dim);margin-top:8px;">Total votos: ${total}</div></div>`;
+  } else {
+    html += `<div class="card"><div class="card-title" style="margin-bottom:12px;">Vota a la mejor jugadora del partido</div>
+      <div class="vote-grid">`;
+    state.jugadoras.forEach(p => {
+      const v = state.votes[p.id]||0;
+      const pct = total > 0 ? Math.round(v/total*100) : 0;
+      html += `<div class="vote-card${state.selectedVote === p.id ? ' voted' : ''}" onclick="selectVote('${p.id}')">
+        <div class="avatar avatar-blue" style="width:36px;height:36px;font-size:12px;">${p.num}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:600;">${p.name}</div>
+          <div style="font-size:11px;color:var(--text-dim);">${p.pos}</div>
+          <div class="vote-bar-wrap"><div class="vote-bar" style="width:${pct}%"></div></div>
+        </div>
+        <div class="vote-num">${v}</div>
+      </div>`;
+    });
+    html += `</div>
+      <button class="btn-votar" id="btnVotar" ${!state.selectedVote || state.hasVoted ? 'disabled' : ''} onclick="submitVote()">
+        ${state.hasVoted ? '✓ Voto registrado' : 'Confirmar voto'}
+      </button>
+      ${state.hasVoted ? '<div class="voted-msg">¡Gracias por participar! Tu voto fue registrado.</div>' : ''}
+    </div>`;
+  }
+  document.getElementById('pageContent').innerHTML = html;
+}
+
+function selectVote(pid) {
+  if (state.hasVoted) return;
+  state.selectedVote = pid;
+  renderVotacion();
+}
+function submitVote() {
+  if (!state.selectedVote || state.hasVoted) return;
+  state.hasVoted = true;
+  state.votes[state.selectedVote] = (state.votes[state.selectedVote]||0) + 1;
+  showToast('¡Voto registrado con éxito!');
+  renderVotacion();
+}
+
+function renderEquipos() {
+  document.getElementById('pageContent').innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Equipos registrados</span>
+        <button class="btn btn-blue">+ Nuevo equipo</button>
+      </div>
+      <table class="table">
+        <thead><tr><th>Equipo</th><th>Categoría</th><th>Jugadoras</th><th>Acción</th></tr></thead>
+        <tbody>
+          ${state.equipos.map(e => `<tr>
+            <td><div style="display:flex;align-items:center;gap:10px;">
+              <div class="avatar avatar-${e.color}" style="width:32px;height:32px;font-size:11px;">${e.init}</div>
+              <span style="font-weight:600;">${e.name}</span>
+            </div></td>
+            <td>${e.cat}</td>
+            <td>${state.jugadoras.filter(j=>j.equipo===e.name).length}</td>
+            <td><button class="btn" style="font-size:11px;padding:5px 10px;">Editar</button></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function renderJugadoras() {
+  document.getElementById('pageContent').innerHTML = `
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Jugadoras · Damas A</span>
+        <button class="btn btn-blue" onclick="openModal('modalJugadora')">+ Agregar jugadora</button>
+      </div>
+      <table class="table">
+        <thead><tr><th>Jugadora</th><th>N°</th><th>Posición</th><th>Equipo</th><th>Goles</th><th>Asist.</th></tr></thead>
+        <tbody>
+          ${state.jugadoras.map(j => `<tr>
+            <td><div style="display:flex;align-items:center;gap:8px;">
+              <div class="avatar avatar-blue" style="width:28px;height:28px;font-size:10px;">${j.num}</div>
+              ${j.name}${j.gk ? ' <span class="badge-small badge-blue" style="font-size:10px;padding:1px 6px;">GK</span>' : ''}
+            </div></td>
+            <td>${j.num}</td>
+            <td>${j.pos}</td>
+            <td>${j.equipo}</td>
+            <td style="font-weight:700;color:var(--blue);">${j.goles}</td>
+            <td>${j.asist}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function renderAccessDenied() {
+  document.getElementById('pageContent').innerHTML = `
+    <div class="access-denied">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;">Acceso restringido</div>
+      <div>Esta sección es solo para entrenadores/as de Hockey UCH.</div>
+    </div>`;
+}
+
+// ===== PIZARRA TÁCTICA =====
+function renderPizarra() {
+  document.getElementById('pageContent').innerHTML = `
+    <div class="pizarra-layout">
+      <div class="pizarra-controls">
+        <div class="ctrl-section">Formación UCH</div>
+        <button class="fmtn-btn active-f" id="fmtn-1-3-1-1" onclick="setFormation('1-3-1-1')">▦ 1-3-1-1</button>
+        <button class="fmtn-btn" id="fmtn-1-2-2-1" onclick="setFormation('1-2-2-1')">▦ 1-2-2-1</button>
+        <button class="fmtn-btn" id="fmtn-1-3-2" onclick="setFormation('1-3-2')">▦ 1-3-2</button>
+        <div class="ctrl-section">Herramientas</div>
+        <button class="fmtn-btn" onclick="clearArrows()" style="color:var(--text-sub);">↺ Borrar flechas</button>
+        <button class="fmtn-btn" onclick="resetPizarra()" style="color:var(--red);">⟳ Reiniciar todo</button>
+        <div class="ctrl-section">Leyenda</div>
+        <div style="font-size:11px;color:var(--text-dim);line-height:2;">
+          <div>● <span style="color:var(--blue);font-weight:600;">Azul</span> = UCH</div>
+          <div>● <span style="color:var(--red);font-weight:600;">Rojo</span> = Rival</div>
+          <div>🟡 Borde = Arquera</div>
+          <div style="margin-top:6px;">→ Sólida = Movimiento</div>
+          <div>⌇ Punteada = Pase</div>
+        </div>
+      </div>
+      <div class="pizarra-main">
+        <div class="pizarra-toolbar">
+          <button class="draw-btn" id="dbtn-drag" onclick="setDrawMode('drag')">✋ Mover</button>
+          <button class="draw-btn" id="dbtn-arrow" onclick="setDrawMode('arrow')">→ Movimiento</button>
+          <button class="draw-btn" id="dbtn-pass" onclick="setDrawMode('pass')">⌇ Pase</button>
+        </div>
+        <div class="field-canvas-wrap" id="fieldWrap">
+          <canvas id="pitchCanvas"></canvas>
+          <div id="playersContainer"></div>
+          <div class="pfield-tooltip" id="fieldTooltip"></div>
+        </div>
+        <div class="legend-row">
+          <span class="legend-text"><span class="legend-dot" style="background:var(--blue);"></span>UCH</span>
+          <span class="legend-text"><span class="legend-dot" style="background:var(--red);"></span>Rival</span>
+          <span class="legend-text"><span class="legend-dot" style="background:#FAC775;border:1px solid #aaa;"></span>Arquera</span>
+          <span style="font-size:11px;color:var(--text-dim);margin-left:auto;">Arrastra jugadoras · dibuja sobre la cancha</span>
+        </div>
+      </div>
+    </div>`;
+
+  setTimeout(() => {
+    initPitchPositions(state.currentFormation);
+    drawPitch();
+    renderTokens();
+    setupPitchEvents();
+    updateDrawBtns();
+    updateFormationBtns();
+  }, 30);
+}
+
+const FW = 460, FH = 620;
+
+function initPitchPositions(f) {
+  const fd = FORMATIONS[f];
+  state.jugadoras.forEach((p,i) => {
+    const c = fd.uch[i] || fd.uch[fd.uch.length-1];
+    state.positions[p.id] = { x: c[0], y: c[1] };
+  });
+  state.rivalPlayers.forEach((p,i) => {
+    const c = fd.rival[i] || fd.rival[fd.rival.length-1];
+    state.positions[p.id] = { x: c[0], y: c[1] };
+  });
+}
+
+function drawPitch() {
+  const canvas = document.getElementById('pitchCanvas');
+  if (!canvas) return;
+  canvas.width = FW; canvas.height = FH;
+  const ctx = canvas.getContext('2d');
+
+  // Fondo césped
+  ctx.fillStyle = '#1e7a3a';
+  ctx.beginPath(); ctx.roundRect(0,0,FW,FH,8); ctx.fill();
+
+  // Franjas
+  for (let i=0;i<8;i++) {
+    ctx.fillStyle = i%2===0 ? 'rgba(255,255,255,0.04)' : 'transparent';
+    ctx.fillRect(0, i*(FH/8), FW, FH/8);
+  }
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.88)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([]);
+
+  const pad = 28;
+  const fw = FW - pad*2, fh = FH - pad*2;
+
+  // Borde cancha
+  ctx.strokeRect(pad, pad, fw, fh);
+
+  // Línea central
+  ctx.beginPath(); ctx.moveTo(pad, FH/2); ctx.lineTo(FW-pad, FH/2); ctx.stroke();
+  ctx.beginPath(); ctx.arc(FW/2, FH/2, 3, 0, Math.PI*2); ctx.fillStyle='rgba(255,255,255,0.88)'; ctx.fill();
+
+  // Shooting circles (semicírculos D de hockey)
+  const circleR = 85;
+  ctx.beginPath(); ctx.arc(FW/2, pad, circleR, 0, Math.PI, false); ctx.stroke();
+  ctx.beginPath(); ctx.arc(FW/2, FH-pad, circleR, Math.PI, Math.PI*2, false); ctx.stroke();
+
+  // Líneas de 23m (en proporción al 7v7)
+  const line23y1 = pad + fh*0.22;
+  const line23y2 = FH - pad - fh*0.22;
+  ctx.setLineDash([6,4]);
+  ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+  ctx.beginPath(); ctx.moveTo(pad, line23y1); ctx.lineTo(FW-pad, line23y1); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(pad, line23y2); ctx.lineTo(FW-pad, line23y2); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.strokeStyle = 'rgba(255,255,255,0.88)';
+
+  // Área penal
+  const paw = 140, pah = 38;
+  const pax = (FW-paw)/2;
+  ctx.strokeRect(pax, pad, paw, pah);
+  ctx.strokeRect(pax, FH-pad-pah, paw, pah);
+
+  // Arcos pequeños (hockey)
+  const gw = 72, gh = 14;
+  const gx = (FW-gw)/2;
+  ctx.lineWidth = 2.5;
+  ctx.strokeRect(gx, pad-gh, gw, gh);
+  ctx.strokeRect(gx, FH-pad, gw, gh);
+  ctx.lineWidth = 1.5;
+
+  // Línea central punteada vertical (referencia)
+  ctx.setLineDash([4,6]);
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+  ctx.beginPath(); ctx.moveTo(FW/2, pad); ctx.lineTo(FW/2, FH-pad); ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Flechas dibujadas
+  state.arrows.forEach(a => drawArrow(ctx, a));
+}
+
+function drawArrow(ctx, a) {
+  ctx.save();
+  ctx.strokeStyle = a.type === 'pass' ? '#FACC15' : '#F87171';
+  ctx.lineWidth = 2;
+  if (a.type === 'pass') ctx.setLineDash([6,4]);
+  ctx.beginPath(); ctx.moveTo(a.x1,a.y1); ctx.lineTo(a.x2,a.y2); ctx.stroke();
+  ctx.setLineDash([]);
+  const angle = Math.atan2(a.y2-a.y1, a.x2-a.x1);
+  const hl = 10;
+  ctx.beginPath();
+  ctx.moveTo(a.x2,a.y2);
+  ctx.lineTo(a.x2-hl*Math.cos(angle-0.4), a.y2-hl*Math.sin(angle-0.4));
+  ctx.lineTo(a.x2-hl*Math.cos(angle+0.4), a.y2-hl*Math.sin(angle+0.4));
+  ctx.closePath();
+  ctx.fillStyle = a.type === 'pass' ? '#FACC15' : '#F87171';
+  ctx.fill();
+  ctx.restore();
+}
+
+function renderTokens() {
+  const container = document.getElementById('playersContainer');
+  if (!container) return;
+  container.innerHTML = '';
+  const all = [
+    ...state.jugadoras.map(p=>({...p, team:'uch'})),
+    ...state.rivalPlayers.map(p=>({...p, team:'rival'}))
+  ];
+  all.forEach(p => {
+    const pos = state.positions[p.id];
+    if (!pos) return;
+    const el = document.createElement('div');
+    el.className = `player-token ${p.team}${p.gk?' gk':''}`;
+    el.id = 'tok-'+p.id;
+    el.style.left = (pos.x-18)+'px';
+    el.style.top  = (pos.y-18)+'px';
+    el.innerHTML  = `<span class="pnum">${p.num}</span><span class="pname">${p.name}</span>`;
+    el.addEventListener('mousedown', e => startDrag(e, p.id));
+    el.addEventListener('click', e => showFieldTooltip(e, p));
+    container.appendChild(el);
+  });
+}
+
+function startDrag(e, pid) {
+  if (state.drawMode !== 'drag') return;
+  e.preventDefault();
+  state.isDragging = false;
+  const ox = state.positions[pid].x, oy = state.positions[pid].y;
+  const sx = e.clientX, sy = e.clientY;
+  function move(ev) {
+    const dx = ev.clientX-sx, dy = ev.clientY-sy;
+    if (Math.abs(dx)>3||Math.abs(dy)>3) state.isDragging = true;
+    const nx = Math.max(18, Math.min(FW-18, ox+dx));
+    const ny = Math.max(18, Math.min(FH-18, oy+dy));
+    const el = document.getElementById('tok-'+pid);
+    if (el) { el.style.left=(nx-18)+'px'; el.style.top=(ny-18)+'px'; }
+  }
+  function up(ev) {
+    document.removeEventListener('mousemove', move);
+    document.removeEventListener('mouseup', up);
+    state.positions[pid] = {
+      x: Math.max(18, Math.min(FW-18, ox+(ev.clientX-sx))),
+      y: Math.max(18, Math.min(FH-18, oy+(ev.clientY-sy)))
+    };
+    setTimeout(() => { state.isDragging = false; }, 60);
+  }
+  document.addEventListener('mousemove', move);
+  document.addEventListener('mouseup', up);
+}
+
+function showFieldTooltip(e, p) {
+  if (state.isDragging) return;
+  const tt = document.getElementById('fieldTooltip');
+  if (!tt) return;
+  const team = p.team === 'uch' ? 'UCH' : 'Rival';
+  tt.textContent = `#${p.num} ${p.name} · ${p.pos||p.role} · ${team}`;
+  tt.style.display = 'block';
+  const pos = state.positions[p.id];
+  tt.style.left = (pos.x+22)+'px';
+  tt.style.top  = (pos.y-16)+'px';
+  setTimeout(()=>{ tt.style.display='none'; }, 2200);
+}
+
+function setupPitchEvents() {
+  const canvas = document.getElementById('pitchCanvas');
+  if (!canvas) return;
+  canvas.addEventListener('mousedown', e => {
+    if (state.drawMode === 'drag') return;
+    const rect = canvas.getBoundingClientRect();
+    state.drawStart = { x: e.clientX-rect.left, y: e.clientY-rect.top };
+  });
+  canvas.addEventListener('mouseup', e => {
+    if (state.drawMode === 'drag' || !state.drawStart) return;
+    const rect = canvas.getBoundingClientRect();
+    const ex = e.clientX-rect.left, ey = e.clientY-rect.top;
+    if (Math.sqrt((ex-state.drawStart.x)**2+(ey-state.drawStart.y)**2) > 15) {
+      state.arrows.push({ x1:state.drawStart.x, y1:state.drawStart.y, x2:ex, y2:ey, type: state.drawMode==='pass'?'pass':'arrow' });
+      drawPitch();
+    }
+    state.drawStart = null;
+  });
+  canvas.addEventListener('mousemove', e => {
+    if (state.drawMode === 'drag' || !state.drawStart) return;
+    const rect = canvas.getBoundingClientRect();
+    drawPitch();
+    const ctx = canvas.getContext('2d');
+    ctx.save();
+    ctx.strokeStyle = state.drawMode==='pass' ? '#FACC15' : '#F87171';
+    ctx.lineWidth = 2; ctx.globalAlpha = 0.55;
+    if (state.drawMode==='pass') ctx.setLineDash([6,4]);
+    ctx.beginPath();
+    ctx.moveTo(state.drawStart.x, state.drawStart.y);
+    ctx.lineTo(e.clientX-rect.left, e.clientY-rect.top);
+    ctx.stroke(); ctx.restore();
+  });
+}
+
+function setFormation(f) {
+  state.currentFormation = f;
+  state.arrows = [];
+  initPitchPositions(f);
+  drawPitch();
+  renderTokens();
+  updateFormationBtns();
+}
+function clearArrows() { state.arrows = []; drawPitch(); }
+function resetPizarra() {
+  state.arrows = [];
+  initPitchPositions(state.currentFormation);
+  drawPitch(); renderTokens();
+}
+function setDrawMode(m) { state.drawMode = m; updateDrawBtns(); }
+function updateDrawBtns() {
+  ['drag','arrow','pass'].forEach(m => {
+    const el = document.getElementById('dbtn-'+m);
+    if (el) el.classList.toggle('active-d', state.drawMode===m);
+  });
+  const c = document.getElementById('pitchCanvas');
+  if (c) c.style.cursor = state.drawMode==='drag' ? 'default' : 'crosshair';
+}
+function updateFormationBtns() {
+  ['1-3-1-1','1-2-2-1','1-3-2'].forEach(f => {
+    const el = document.getElementById('fmtn-'+f);
+    if (el) el.classList.toggle('active-f', state.currentFormation===f);
+  });
+}
+
+// ===== MODALES =====
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function guardarPartido() {
+  const equipo  = document.getElementById('m-equipo').value;
+  const rival   = document.getElementById('m-rival').value.trim() || 'Rival';
+  const fecha   = document.getElementById('m-fecha').value || 'Sin fecha';
+  const sede    = document.getElementById('m-sede').value.trim() || 'Sin sede';
+  const cond    = document.getElementById('m-cond').value;
+  const gUCH    = parseInt(document.getElementById('m-goles-uch').value)||0;
+  const gRival  = parseInt(document.getElementById('m-goles-rival').value)||0;
+  state.partidos.unshift({ id:'p'+(Date.now()), equipo, rival, gUCH, gRival, fecha, sede, cond });
+  closeModal('modalPartido');
+  showToast('Partido registrado correctamente');
+  renderPartidos();
+}
+
+function guardarJugadora() {
+  const nombre = document.getElementById('j-nombre').value.trim();
+  const num    = document.getElementById('j-num').value || '99';
+  const pos    = document.getElementById('j-pos').value;
+  const equipo = document.getElementById('j-equipo').value;
+  if (!nombre) { showToast('Ingresa el nombre de la jugadora'); return; }
+  const id = 'u'+(Date.now());
+  state.jugadoras.push({ id, num, name: nombre, pos, equipo, goles:0, asist:0, tarjetas:0, gk: pos==='Arquera' });
+  state.votes[id] = 0;
+  closeModal('modalJugadora');
+  showToast('Jugadora agregada correctamente');
+  renderJugadoras();
+}
+
+// ===== TOAST =====
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Cerrar modales al hacer clic fuera
+document.addEventListener('click', e => {
+  ['modalPartido','modalJugadora'].forEach(id => {
+    const overlay = document.getElementById(id);
+    if (e.target === overlay) closeModal(id);
+  });
+});
+</script>
+</body>
+</html>
