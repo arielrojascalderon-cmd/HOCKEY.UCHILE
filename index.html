@@ -185,6 +185,26 @@ select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csv
 .partido-detalle-gol{display:inline-flex;align-items:center;gap:4px;background:#E1F5EE;color:#085041;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;margin:2px;}
 .partido-detalle-nom{display:inline-flex;align-items:center;gap:4px;background:var(--blue-light);color:var(--blue-dark);padding:2px 8px;border-radius:99px;font-size:11px;font-weight:600;margin:2px;}
 
+/* GOLEADORAS RANKING */
+.ranking-item{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--gray-100);border-radius:var(--radius-md);margin-bottom:8px;background:white;transition:transform 0.15s;}
+.ranking-item:hover{transform:translateX(3px);}
+.ranking-pos{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;}
+.ranking-pos.gold{background:#FEF3C7;color:#92400E;}
+.ranking-pos.silver{background:#F1F5F9;color:#475569;}
+.ranking-pos.bronze{background:#FEF0E7;color:#92400E;}
+.ranking-pos.other{background:var(--gray-100);color:var(--gray-700);}
+.ranking-bar-wrap{flex:1;height:8px;background:var(--gray-100);border-radius:99px;overflow:hidden;}
+.ranking-bar{height:8px;border-radius:99px;background:linear-gradient(90deg,var(--blue),var(--blue-mid));transition:width 0.6s ease;}
+.ranking-goles{font-size:20px;font-weight:700;color:var(--blue);min-width:32px;text-align:right;}
+
+/* NOTIFICACIÓN NÓMINA */
+.nomina-alert{border-radius:var(--radius-md);padding:1rem 1.25rem;margin-bottom:1rem;display:flex;align-items:center;gap:12px;animation:fadein 0.3s ease;}
+.nomina-alert.convocada{background:linear-gradient(135deg,#E1F5EE,#C8EDE0);border:1px solid #5DCAA5;}
+.nomina-alert.no-convocada{background:var(--gray-50);border:1px solid var(--gray-200);}
+.nomina-alert-icon{font-size:28px;flex-shrink:0;}
+.nomina-alert-title{font-size:14px;font-weight:700;color:var(--text);}
+.nomina-alert-sub{font-size:12px;color:var(--text-sub);margin-top:2px;}
+
 /* PRÓXIMO PARTIDO */
 .proximo-banner{background:linear-gradient(135deg,var(--blue-dark),var(--blue));border-radius:var(--radius-md);padding:1.5rem;color:white;margin-bottom:1rem;}
 .proximo-vs{font-size:22px;font-weight:700;margin:8px 0;}
@@ -343,6 +363,7 @@ select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csv
     <div class="nav-item" id="nav-proximo" onclick="goPage('proximo')">🏟️ Próximo partido</div>
     <div class="nav-section">Mi espacio</div>
     <div class="nav-item" id="nav-ficha" onclick="goPage('ficha')">👤 Mi ficha</div>
+    <div class="nav-item" id="nav-goleadoras" onclick="goPage('goleadoras')">⚽ Goleadoras</div>
     <div class="nav-item" id="nav-votacion" onclick="goPage('votacion')">⭐ Votación</div>
     <div class="nav-section" id="navSecGestion">Gestión</div>
     <div class="nav-item" id="nav-equipos" onclick="goPage('equipos')">👥 Equipos</div>
@@ -592,7 +613,7 @@ function showApp(){
 const PMETA={
   home:['Resumen','Panel principal'],partidos:['Partidos','Historial de encuentros'],
   proximo:['Próximo partido','Información y nómina'],
-  ficha:['Mi ficha','Estadísticas personales'],votacion:['Votación','Jugadora del partido'],
+  ficha:['Mi ficha','Estadísticas personales'],goleadoras:['Goleadoras','Ranking de la temporada'],votacion:['Votación','Jugadora del partido'],
   equipos:['Equipos','Gestión de equipos'],jugadoras:['Jugadoras','Registro de jugadoras'],
   pizarra:['Pizarra táctica','Hockey seven a side — 7v7']
 };
@@ -603,7 +624,7 @@ window.goPage=function(page){
   const m=PMETA[page]||['—','—'];
   document.getElementById('topbarTitle').textContent=m[0];
   document.getElementById('topbarSub').textContent=m[1];
-  ({home:renderHome,partidos:renderPartidos,proximo:renderProximo,ficha:renderFicha,votacion:renderVotacion,
+  ({home:renderHome,partidos:renderPartidos,proximo:renderProximo,ficha:renderFicha,goleadoras:renderGoleadoras,votacion:renderVotacion,
     equipos:renderEquipos,jugadoras:renderJugadoras,pizarra:renderPizarra})[page]?.();
 };
 
@@ -615,9 +636,34 @@ async function renderHome(){
   const wins=ps.filter(p=>p.gUCH>p.gRival).length;
   const draws=ps.filter(p=>p.gUCH===p.gRival).length;
   const losses=ps.filter(p=>p.gUCH<p.gRival).length;
-  const ult=ps.sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''))[0];
+  // Notificación nómina para jugadoras
+  let alertaNomina='';
+  if(ROLE==='player'){
+    const snapP=await getDoc(doc(db,'config','proximoPartido'));
+    if(snapP.exists()&&snapP.data().rival){
+      const pp=snapP.data();
+      const nomina=pp.nomina||[];
+      // Buscar uid de la jugadora
+      const snapJ=await getDocs(collection(db,'jugadoras'));
+      const miJ=snapJ.docs.map(d=>({id:d.id,...d.data()})).find(j=>j.uid===ME.uid);
+      if(miJ){
+        const convocada=nomina.includes(miJ.id);
+        alertaNomina=`<div class="nomina-alert ${convocada?'convocada':'no-convocada'}">
+          <div class="nomina-alert-icon">${convocada?'🎽':'⏳'}</div>
+          <div>
+            <div class="nomina-alert-title">${convocada?'¡Estás convocada!':'Próximo partido publicado'}</div>
+            <div class="nomina-alert-sub">${convocada
+              ?`Estás en la nómina para el partido vs ${pp.rival} · ${pp.fecha||''} ${pp.hora?'· '+pp.hora+' hrs':''}`
+              :`vs ${pp.rival} · ${pp.fecha||''} ${pp.hora?'· '+pp.hora+' hrs':''}. Aún no estás en la nómina.`}
+            </div>
+          </div>
+          <button class="btn" style="margin-left:auto;flex-shrink:0;" onclick="goPage('proximo')">Ver detalle</button>
+        </div>`;
+      }
+    }
+  }
   const isC=ROLE==='coach';
-  set(`<div class="stats-grid">
+  set(`${alertaNomina}<div class="stats-grid">
     <div class="stat-card"><div class="stat-label">Partidos</div><div class="stat-value">${ps.length}</div></div>
     <div class="stat-card"><div class="stat-label">Victorias</div><div class="stat-value">${wins}</div></div>
     <div class="stat-card"><div class="stat-label">Empates</div><div class="stat-value gray">${draws}</div></div>
@@ -641,6 +687,7 @@ async function renderHome(){
       <button class="btn btn-blue" onclick="goPage('jugadoras')">➕ Agregar jugadora</button>
       <button class="btn btn-blue" onclick="abrirNuevoPartido()">📅 Registrar partido</button>
       <button class="btn btn-blue" onclick="abrirModalProximo()">🏟️ Publicar próximo partido</button>
+      <button class="btn" onclick="goPage('goleadoras')">⚽ Ver ranking</button>
       <button class="btn" onclick="goPage('pizarra')">🏑 Pizarra táctica</button>
     </div>
   </div>`:''}`);}
@@ -1127,6 +1174,80 @@ async function renderFicha(){
 }
 
 
+// ===== GOLEADORAS =====
+async function renderGoleadoras(){
+  set('<div class="loading-card">Cargando ranking...</div>');
+  const snapJ=await getDocs(collection(db,'jugadoras'));
+  const jugadoras=snapJ.docs.map(d=>({id:d.id,...d.data()}))
+    .filter(j=>j.goles>0)
+    .sort((a,b)=>(b.goles||0)-(a.goles||0));
+  const todas=snapJ.docs.map(d=>({id:d.id,...d.data()}));
+  const maxGoles=jugadoras[0]?.goles||1;
+  const medallas=['gold','silver','bronze'];
+  const emojis=['🥇','🥈','🥉'];
+
+  // Stats generales
+  const totalGoles=jugadoras.reduce((s,j)=>s+(j.goles||0),0);
+  const totalNoms=todas.reduce((s,j)=>s+(j.nominaciones||0),0);
+
+  let html=`
+    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);">
+      <div class="stat-card"><div class="stat-label">Total goles UCH</div><div class="stat-value">${totalGoles}</div></div>
+      <div class="stat-card"><div class="stat-label">Jugadoras anotadoras</div><div class="stat-value">${jugadoras.length}</div></div>
+      <div class="stat-card"><div class="stat-label">Total nominaciones</div><div class="stat-value">${totalNoms}</div></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">⚽ Ranking goleadoras · Temporada 2026</span>
+      </div>`;
+
+  if(jugadoras.length===0){
+    html+=`<div class="empty-state">Aún no hay goles registrados en la temporada.</div>`;
+  } else {
+    jugadoras.forEach((j,i)=>{
+      const pct=Math.round((j.goles||0)/maxGoles*100);
+      const posClass=medallas[i]||'other';
+      const emoji=emojis[i]||i+1;
+      html+=`<div class="ranking-item">
+        <div class="ranking-pos ${posClass}">${emoji}</div>
+        <div class="avatar av-blue" style="width:36px;height:36px;font-size:12px;">${j.num}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:700;">${j.nombre||j.name||''}</div>
+          <div style="font-size:11px;color:var(--text-dim);">${j.pos||''} · UCH ${j.equipo||''} · ${j.nominaciones||0} convocatorias</div>
+          <div class="ranking-bar-wrap" style="margin-top:6px;">
+            <div class="ranking-bar" style="width:${pct}%"></div>
+          </div>
+        </div>
+        <div class="ranking-goles">${j.goles||0}</div>
+      </div>`;
+    });
+  }
+  html+=`</div>`;
+
+  // Tabla también con nominaciones
+  html+=`<div class="card">
+    <div class="card-title" style="margin-bottom:1rem;">📋 Ranking nominaciones</div>
+    <table class="table">
+      <thead><tr><th>#</th><th>Jugadora</th><th>Equipo</th><th>Nominaciones</th><th>Goles</th></tr></thead>
+      <tbody>
+        ${todas.filter(j=>(j.nominaciones||0)>0)
+          .sort((a,b)=>(b.nominaciones||0)-(a.nominaciones||0))
+          .map((j,i)=>`<tr>
+            <td style="font-weight:700;color:var(--text-dim);">${i+1}</td>
+            <td><div style="display:flex;align-items:center;gap:8px;">
+              <div class="avatar av-blue" style="width:26px;height:26px;font-size:10px;">${j.num}</div>
+              ${j.nombre||j.name||''}
+            </div></td>
+            <td>${j.equipo||''}</td>
+            <td style="font-weight:700;color:var(--blue);">${j.nominaciones||0}</td>
+            <td style="font-weight:700;color:#085041;">${j.goles||0}</td>
+          </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+  set(html);
+}
+
 // ===== VOTACIÓN =====
 async function renderVotacion(){
   set('<div class="loading-card">Cargando votación...</div>');
@@ -1475,13 +1596,12 @@ window.toggleSidebar=function(){
   ov.classList.toggle('open');
 };
 // Cerrar sidebar al hacer clic en nav item en móvil
-document.querySelectorAll('.nav-item').forEach(el=>{
-  el.addEventListener('click',()=>{
-    if(window.innerWidth<=768){
-      document.querySelector('.sidebar').classList.remove('open');
-      document.getElementById('sidebarOverlay').classList.remove('open');
-    }
-  });
+// Cerrar sidebar en móvil al tocar cualquier nav-item (evento delegado)
+document.querySelector('.sidebar').addEventListener('click',e=>{
+  if(window.innerWidth<=768 && e.target.closest('.nav-item')){
+    document.querySelector('.sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('open');
+  }
 });
 </script>
 </body>
