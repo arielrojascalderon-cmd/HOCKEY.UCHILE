@@ -1323,7 +1323,7 @@ async function renderVotacion(){
   const total=Object.values(votosMap).reduce((a,b)=>a+b,0);
   const sorted=[...jugadoras].sort((a,b)=>(votosMap[b.id]||0)-(votosMap[a.id]||0));
   const winner=sorted[0];
-  const isC=ROLE==="coach"||ROLE==="admin";;
+  const isC=ROLE==="coach"||ROLE==="admin";
   let html='';
   if(winner){
     html+=`<div class="winner-card">
