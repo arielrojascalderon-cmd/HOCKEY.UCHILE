@@ -761,7 +761,10 @@ async function renderHome(){
 
 // ===== PARTIDOS =====
 function renderPartidos(){
-  const isC=ROLE==='coach'||ROLE==='admin';
+  const isC=ROLE==='coach';
+  const isG=ROLE==='coach'||ROLE==='admin';
+  set(`<div class="card">
+    <div class="card-header"><span class="card-title">Historial de partidos</span>
       ${isG?`<button class="btn btn-blue" onclick="abrirNuevoPartido()">+ Registrar partido</button>`:''}
     </div>
     <div id="listP"><div class="empty-state">Cargando...</div></div>
