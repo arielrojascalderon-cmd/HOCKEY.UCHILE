@@ -1055,11 +1055,16 @@ async function renderProximo(){
   }
   const p=snap.data();
   const nomina=p.nomina||[];
-  // Formatear fecha
   let fechaStr=p.fecha||'';
   if(fechaStr){const d=new Date(fechaStr+'T12:00:00');fechaStr=d.toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long',year:'numeric'});}
-  // Formatear hora
-  let horaStr=p.hora?p.hora+' hrs':'';
+  const horaStr=p.hora?p.hora+' hrs':'';
+  let nominadas=[];
+  if(nomina.length>0){
+    const snapJ=await getDocs(collection(db,'jugadoras'));
+    const todas=snapJ.docs.map(d=>({id:d.id,...d.data()}));
+    nominadas=nomina.map(uid=>todas.find(j=>j.id===uid||j.uid===uid)).filter(Boolean)
+      .sort((a,b)=>parseInt(a.num)-parseInt(b.num));
+  }
   set(`
     <div class="proximo-banner">
       <div style="font-size:11px;font-weight:600;opacity:0.6;text-transform:uppercase;letter-spacing:0.08em;">Próximo partido · UCH ${p.equipo||''}</div>
@@ -1075,34 +1080,28 @@ async function renderProximo(){
         <button class="btn" style="background:rgba(255,255,255,0.1);color:white;border-color:rgba(255,255,255,0.2);" onclick="eliminarProximo()">🗑️ Quitar</button>
       </div>`:''}
     </div>
-
-    <div class="card">
-      <div class="card-header">
-        <span class="card-title">🎽 Nómina convocada</span>
-        <span class="badge-small badge-blue-s">${nomina.length} jugadoras</span>
+    <div class="card" style="background:var(--blue-dark);border:none;padding:0;overflow:hidden;">
+      <div style="padding:1.25rem 1.25rem 0.5rem;">
+        <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:0.1em;">🎽 Nómina oficial</div>
       </div>
       ${nomina.length===0
-        ? `<div class="empty-state">${isC?'No has publicado la nómina aún.':'La nómina aún no ha sido publicada.'}</div>`
-        : `<div class="nomina-grid" id="nominaGrid"></div>`}
+        ?`<div style="padding:1.5rem;text-align:center;color:rgba(255,255,255,0.4);font-size:13px;">
+            ${isC?'No has publicado la nómina aún.':'La nómina aún no ha sido publicada.'}
+          </div>`
+        :`<div style="padding:0 12px 12px;">
+          ${nominadas.map(j=>`
+            <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;margin-bottom:5px;background:${j.pos==='Arquera'?'rgba(192,21,42,0.25)':'rgba(255,255,255,0.06)'};${j.pos==='Arquera'?'border:1px solid rgba(192,21,42,0.35);':''}">
+              <div style="width:30px;height:30px;border-radius:50%;background:${j.pos==='Arquera'?'var(--red)':'var(--blue)'};color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">${j.num}</div>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:13px;font-weight:600;color:white;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${j.nombre||j.name||''}</div>
+                <div style="font-size:11px;color:rgba(255,255,255,0.45);">${j.pos||''}</div>
+              </div>
+              ${j.pos==='Arquera'
+                ?`<span style="background:rgba(192,21,42,0.3);color:#F87171;font-size:9px;font-weight:600;padding:2px 7px;border-radius:99px;border:1px solid rgba(192,21,42,0.4);">GK</span>`
+                :`<span style="background:rgba(29,158,117,0.2);color:#5DCAA5;font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px;">✓</span>`}
+            </div>`).join('')}
+        </div>`}
     </div>`);
-
-  if(nomina.length>0){
-    // Cargar datos de jugadoras nominadas
-    const snapJ=await getDocs(collection(db,'jugadoras'));
-    const todas=snapJ.docs.map(d=>({id:d.id,...d.data()}));
-    const nominadas=nomina.map(uid=>todas.find(j=>j.id===uid||j.uid===uid)).filter(Boolean);
-    const grid=document.getElementById('nominaGrid');
-    if(grid){
-      grid.innerHTML=nominadas.map((j,i)=>`
-        <div class="nomina-card">
-          <div class="nomina-num">${j.num||i+1}</div>
-          <div>
-            <div class="nomina-name">${j.nombre||j.name||''}</div>
-            <div class="nomina-pos">${j.pos||''}</div>
-          </div>
-        </div>`).join('');
-    }
-  }
 }
 
 window.abrirModalProximo=async function(){
